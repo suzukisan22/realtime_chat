@@ -1,24 +1,15 @@
-# README
+## 参考サイト
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+ほぼ以下のサイトを参考にしました。
+http://qiita.com/jnchito/items/aec75fab42804287d71b
 
-Things you may want to cover:
+変更点のみ以下記載。
 
-* Ruby version
+[1]
+application.jsにjQueryがrequireされているかを確認
 
-* System dependencies
+[2]
+app/assets/javascripts/cable.coffeeの以下の記載の追加は不要
+@App ||= {}
+App.cable = ActionCable.createConsumer()
 
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
