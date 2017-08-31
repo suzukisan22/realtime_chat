@@ -13,3 +13,4 @@ app/assets/javascripts/cable.coffeeの以下の記載の追加は不要
 @App ||= {}
 App.cable = ActionCable.createConsumer()
 
+	
