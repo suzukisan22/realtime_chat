@@ -17,19 +17,95 @@ App.cable = ActionCable.createConsumer()
 
 #3
 routeの設定が不要
-```mount ActionCable.server => '/cable'```
+`mount ActionCable.server => '/cable'`
 
 
-↓log
-RoomChannel#speak({"message"=>"できた"})
-   (0.1ms)  BEGIN
-  SQL (0.8ms)  INSERT INTO "messages" ("content", "created_at", "updated_at") VALUES ($1, $2, $3) RETURNING "id"  [["content", "できた"], ["created_at", "2017-08-31 14:10:10.876936"], ["updated_at", "2017-08-31 14:10:10.876936"]]
-   (8.6ms)  COMMIT
-[ActiveJob] Enqueued MessageBroadcastJob (Job ID: af624887-c526-4bd3-80d3-fcd0dbcd215f) to Async(default) with arguments: #<GlobalID:0x007fb25f0d2ed8 @uri=#<URI::GID gid://campfire/Message/9>>
-  Message Load (0.4ms)  SELECT  "messages".* FROM "messages" WHERE "messages"."id" = $1 LIMIT $2  [["id", 9], ["LIMIT", 1]]
-[ActiveJob] [MessageBroadcastJob] [af624887-c526-4bd3-80d3-fcd0dbcd215f] Performing MessageBroadcastJob (Job ID: af624887-c526-4bd3-80d3-fcd0dbcd215f) from Async(default) with arguments: #<GlobalID:0x007fb25f092a90 @uri=#<URI::GID gid://campfire/Message/9>>
-[ActiveJob] [MessageBroadcastJob] [af624887-c526-4bd3-80d3-fcd0dbcd215f]   Rendered messages/_message.html.erb (0.5ms)
-[ActiveJob] [MessageBroadcastJob] [af624887-c526-4bd3-80d3-fcd0dbcd215f] [ActionCable] Broadcasting to room_channel: {:message=>"<div class=\"message\">\n  <p>できた</p>\n</div>\n"}
-[ActiveJob] [MessageBroadcastJob] [af624887-c526-4bd3-80d3-fcd0dbcd215f] Performed MessageBroadcastJob (Job ID: af624887-c526-4bd3-80d3-fcd0dbcd215f) from Async(default) in 17.22ms
-RoomChannel transmitting {"message"=>"<div class=\"message\">\n  <p>できた</p>\n</div>\n"} (via streamed from room_channel)
+# action cableについて
+
+
+## action cableとは
+rails 5の目玉機能であるAction Cableは、Rails上でWebSocketによる双方向通信を簡単に実現する新しい機能です。
+
+## webSocketとは
+WebSocket（ウェブソケット）とは、サーバーを介してWebブラウザ間で双方向通信を行う仕組みです
+
+## Action Cable
+### 機能の整理
+
+#### コネクション
+	- 機能概要
+		- WebSocket通信をサーバーとクライアントで接続する仕組み
+
+	- 実装の配置箇所
+		- app/channels/application_cable/connection.rbとして提供
+
+#### チャネル
+	- 機能概要
+		- WebSocketを使う上で必要となるサーバー側の仕組み
+
+	- 実装の配置箇所
+		- app/channels配下にApplicationCable::Channelを継承して利用
+
+#### クライアント
+	- 機能概要
+		- WebSocketを使う上で必要となるクライアント側の仕組み。JavaScript/CoffeeScriptで提供
+
+	- 実装の配置箇所
+		- app/assets/javascripts/channels配下に配置
+
+#### ジェネレーター
+	- 機能概要
+		- rails g channelコマンドによるチャネル・クライアントのコードひな型自動生成
+
+## ソース
+### app/assets/javascripts/cable.js
+
+```//= require action_cable
+//= require_self
+//= require_tree ./channels
+(function() {
+  this.App || (this.App = {});
+
+  App.cable = ActionCable.createConsumer();
+
+}).call(this);
+```
+
+
+- 「cable.js」は、クライアントからサーバーに対してWebSocket接続しているコードです。App.cable = ActionCable.createConsumer();でWebSocket通信を確立しています。
+
+### app/assets/javascripts/channels/room.coffee
+- 
+App.room = App.cable.subscriptions.create "RoomChannel",
+…（中略）…
+speak: (message) ->
+    @perform 'speak', message: message
+
+- App.chat_messageの定義の1行目で、Action Cableのサーバー側のチャネルをcreateしています。
+
+- createの引数にChatMessageChannelが指定されている。よって、「app/channels/room_channel.rb」で指定されるサーバー側のチャネルにクライアント側から接続します。
+
+- デフォルトのspeakメソッドを書き換え、引数に指定されたmessageをサーバー側のチャネルのspeakメソッドに引数として渡すようにします。
+
+- @perform 'speak', message: messageと記述すると、RoomChannelのspeakメソッドを呼び出すことができます。
+
+- このCoffeeScriptコードを定義したspeakメソッドをクライアントから呼び出すには、App.room.speak（発言メッセージ）とします。これでクライアント側から発言メッセージをサーバー側に送ることができます。
+
+### app/channels/chat_message_channel.rb
+- …（中略）…
+class ChatMessageChannel < ApplicationCable::Channel
+  def subscribed
+    stream_from 'chat_message_channel'
+  end
+…（中略）…
+  def speak(data)
+    ActionCable.server.broadcast 'chat_message_channel', message: data['message']
+  end
+end
+
+- speakメソッドはクライアント側で、発言メッセージを指定したキーワード引数を取るように定義しました。サーバー側では引数に指定したdata経由で、data['message']とすることで発言メッセージを取り出すことができます。
+
+- speakメソッドのActionCable.server.broadcastでは第1引数にチャネル名を、第2引数に発言メッセージを指定することで、サーバー側からRoomChannelにWebSocketで接続している全クライアントに対して発言メッセージを配信することができます。
+
+- なおsubscribedメソッドは、各クライアントに配信する内容をどこに配信するかを定義しています。この機能はストリームと呼ばれ、Railsが提供する_stream_from_メソッドを通じて、発言メッセージを_room_channel_に接続したクライアントに配信できるようになります。
 	
