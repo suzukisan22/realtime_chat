@@ -109,3 +109,10 @@ end
 
 - なおsubscribedメソッドは、各クライアントに配信する内容をどこに配信するかを定義しています。この機能はストリームと呼ばれ、Railsが提供する_stream_from_メソッドを通じて、発言メッセージを_room_channel_に接続したクライアントに配信できるようになります。
 	
+### app/assets/javascripts/channels/room.coffee
+- received: (data) ->
+    $('#messages').append data['message']
+
+- サーバー側のチャネルからブロードキャストされた発言メッセージをクライアント側で受け取る処理は、receivedメソッドに記述します。
+
+- サーバー側から送られてきたデータを引数dataで受け取ります。発言メッセージはdata['message']で取り出すことができます。
