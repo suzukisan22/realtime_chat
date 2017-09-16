@@ -16,6 +16,7 @@ app/assets/javascripts/cable.coffeeの以下の記載の追加は不要
 App.cable = ActionCable.createConsumer()
 
 #3
+
 routeの設定が不要
 `mount ActionCable.server => '/cable'`
 
@@ -57,7 +58,7 @@ WebSocket（ウェブソケット）とは、サーバーを介してWebブラ�
 	- 機能概要
 		- rails g channelコマンドによるチャネル・クライアントのコードひな型自動生成
 
-## ソース
+## ソース解説
 ### app/assets/javascripts/cable.js
 
 ```//= require action_cable
@@ -77,9 +78,13 @@ WebSocket（ウェブソケット）とは、サーバーを介してWebブラ�
 ### app/assets/javascripts/channels/room.coffee
 - 
 App.room = App.cable.subscriptions.create "RoomChannel",
+
 …（中略）…
+
 speak: (message) ->
+
     @perform 'speak', message: message
+
 
 - App.chat_messageの定義の1行目で、Action Cableのサーバー側のチャネルをcreateしています。
 
@@ -116,3 +121,23 @@ end
 - サーバー側のチャネルからブロードキャストされた発言メッセージをクライアント側で受け取る処理は、receivedメソッドに記述します。
 
 - サーバー側から送られてきたデータを引数dataで受け取ります。発言メッセージはdata['message']で取り出すことができます。
+
+
+
+## 実行コマンド
+- cmd > rails 5.1 new campfire --skip-spring
+
+- cmd > cd campfire
+
+- cmd > rails g controller rooms show
+
+- cmd > rails g model message content:text
+
+- cmd > rails db:migrate
+
+- cmd > rails g channel room speak
+
+- cmd > redis-server
+
+- cmd > rails g job MessageBroadcast
+
