@@ -77,6 +77,8 @@ WebSocket（ウェブソケット）とは、サーバーを介してWebブラ�
 
 ### app/assets/javascripts/channels/room.coffee
 - 
+
+```
 App.room = App.cable.subscriptions.create "RoomChannel",
 
 …（中略）…
@@ -85,6 +87,7 @@ speak: (message) ->
 
     @perform 'speak', message: message
 
+```
 
 - App.chat_messageの定義の1行目で、Action Cableのサーバー側のチャネルをcreateしています。
 
@@ -97,7 +100,9 @@ speak: (message) ->
 - このCoffeeScriptコードを定義したspeakメソッドをクライアントから呼び出すには、App.room.speak（発言メッセージ）とします。これでクライアント側から発言メッセージをサーバー側に送ることができます。
 
 ### app/channels/chat_message_channel.rb
-- …（中略）…
+- 
+
+```…（中略）…
 class ChatMessageChannel < ApplicationCable::Channel
   def subscribed
     stream_from 'chat_message_channel'
@@ -107,6 +112,7 @@ class ChatMessageChannel < ApplicationCable::Channel
     ActionCable.server.broadcast 'chat_message_channel', message: data['message']
   end
 end
+```
 
 - speakメソッドはクライアント側で、発言メッセージを指定したキーワード引数を取るように定義しました。サーバー側では引数に指定したdata経由で、data['message']とすることで発言メッセージを取り出すことができます。
 
